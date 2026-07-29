@@ -10,12 +10,16 @@ COPY . .
 ARG TARGETOS
 ARG TARGETARCH
 RUN if [ -n "${TARGETOS}" ] && [ -n "${TARGETARCH}" ]; then \
-			CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /bootstrap ./cmd/lambda; \
+			CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /server ./cmd/server; \
 		else \
-			CGO_ENABLED=0 go build -o /bootstrap ./cmd/lambda; \
+			CGO_ENABLED=0 go build -o /server ./cmd/server; \
 		fi
 
-FROM public.ecr.aws/lambda/provided:al2023
+FROM alpine:3.21
 
-COPY --from=builder /bootstrap /var/task/bootstrap
-CMD ["bootstrap"]
+COPY --from=builder /server /server
+RUN chmod +x /server
+
+EXPOSE 8081
+
+ENTRYPOINT ["/server"]
