@@ -8,11 +8,10 @@ Na raiz do projeto, execute:
 
 ```bash
 make clean
-make build
 make package
 ```
 
-No final, o arquivo `function.zip` deve existir na raiz.
+No final, o arquivo `backend/function.zip` deve existir.
 
 ## 2. Criar a tabela DynamoDB
 
@@ -60,7 +59,7 @@ Na tela da Lambda:
 
 1. Abra a aba Code.
 2. Clique em Upload from > .zip file.
-3. Envie `function.zip`.
+3. Envie `backend/function.zip`.
 4. Em Runtime settings, confirme:
    - Handler: `bootstrap`
 
@@ -73,7 +72,10 @@ Na Lambda:
 3. Configure:
    - Key: `TABLE_NAME`
    - Value: nome exato da tabela criada no DynamoDB
-4. Salve.
+4. Adicione tambem:
+   - Key: `ALLOWED_ORIGIN`
+   - Value: URL exata do frontend (exemplo: `https://seu-projeto.vercel.app`)
+5. Salve.
 
 ## 7. Criar API Gateway HTTP API
 
@@ -86,6 +88,7 @@ No Console AWS:
    - `POST /todos`
    - `PATCH /todos/{id}`
    - `DELETE /todos/{id}`
+   - `OPTIONS /{proxy+}` (se o CORS nao for configurado diretamente na HTTP API)
 4. Associe todas as rotas a mesma Lambda.
 5. Em Payload format version, use `2.0`.
 6. Crie ou use o stage `$default`.
@@ -124,10 +127,11 @@ curl -X DELETE "https://SUA-URL/todos/SEU_ID"
 
 ## 9. Checklist rapido
 
-- `function.zip` foi gerado localmente
+- `backend/function.zip` foi gerado localmente
 - tabela DynamoDB criada com `id` como partition key String
 - Lambda criada com `provided.al2023` e `arm64`
 - handler configurado como `bootstrap`
 - variavel `TABLE_NAME` configurada
+- variavel `ALLOWED_ORIGIN` configurada com a URL do frontend
 - role IAM com permissoes DynamoDB e CloudWatch Logs
 - API Gateway HTTP API com rotas e payload `2.0`

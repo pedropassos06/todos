@@ -1,1 +1,4 @@
 .env
+backend/function.zip
+frontend/dist/
+frontend/node_modules/

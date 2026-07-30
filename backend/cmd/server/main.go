@@ -85,7 +85,9 @@ func main() {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		for key, value := range resp.Headers {
+			w.Header().Set(key, value)
+		}
 		w.WriteHeader(resp.StatusCode)
 		fmt.Fprint(w, resp.Body)
 	})

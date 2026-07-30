@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -44,6 +45,13 @@ func (h *Handler) HandleRequest(ctx context.Context, req events.APIGatewayV2HTTP
 		path = req.RequestContext.HTTP.Path
 	}
 	routeKey := req.RequestContext.RouteKey
+
+	if method == http.MethodOptions {
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusNoContent,
+			Headers:    corsHeaders(),
+		}, nil
+	}
 
 	switch routeKey {
 	case "GET /todos":
@@ -163,9 +171,7 @@ func (h *Handler) deleteTodo(ctx context.Context, id string) (events.APIGatewayV
 
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusNoContent,
-		Headers: map[string]string{
-			"Access-Control-Allow-Origin": "*",
-		},
+		Headers:    corsHeaders(),
 	}, nil
 }
 
@@ -176,22 +182,35 @@ func jsonResponse(status int, body any) (events.APIGatewayV2HTTPResponse, error)
 		fallback := []byte(`{"message":"internal server error"}`)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type":                "application/json",
-				"Access-Control-Allow-Origin": "*",
-			},
-			Body: string(fallback),
+			Headers:    responseHeaders(),
+			Body:       string(fallback),
 		}, nil
 	}
 
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: status,
-		Headers: map[string]string{
-			"Content-Type":                "application/json",
-			"Access-Control-Allow-Origin": "*",
-		},
-		Body: string(payload),
+		Headers:    responseHeaders(),
+		Body:       string(payload),
 	}, nil
+}
+
+func responseHeaders() map[string]string {
+	headers := corsHeaders()
+	headers["Content-Type"] = "application/json"
+	return headers
+}
+
+func corsHeaders() map[string]string {
+	origin := strings.TrimSpace(os.Getenv("ALLOWED_ORIGIN"))
+	if origin == "" {
+		origin = "*"
+	}
+
+	return map[string]string{
+		"Access-Control-Allow-Origin":  origin,
+		"Access-Control-Allow-Headers": "Content-Type",
+		"Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+	}
 }
 
 func newUUID() string {

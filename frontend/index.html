@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo Pulse</title>
+    <script src="/config.js"></script>
+    <script type="module" src="/src/main.js" defer></script>
+  </head>
+  <body>
+    <div class="ambient-shape ambient-shape-left"></div>
+    <div class="ambient-shape ambient-shape-right"></div>
+
+    <main class="layout">
+      <header class="hero">
+        <p class="kicker">TODO CONTROL CENTER</p>
+        <h1>Todo Pulse</h1>
+        <p class="subtitle">Seu frontend separado, pronto para deploy independente.</p>
+      </header>
+
+      <section class="panel" aria-labelledby="todo-form-title">
+        <h2 id="todo-form-title">Nova tarefa</h2>
+        <form id="todo-form" class="todo-form">
+          <input id="todo-input" name="title" type="text" maxlength="140" placeholder="Ex.: publicar frontend em producao" required />
+          <button type="submit">Adicionar</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="todo-list-title">
+        <div class="list-header">
+          <h2 id="todo-list-title">Tarefas</h2>
+          <div class="filters" role="tablist" aria-label="Filtros">
+            <button class="filter is-active" data-filter="all" role="tab" aria-selected="true">Todas</button>
+            <button class="filter" data-filter="open" role="tab" aria-selected="false">Abertas</button>
+            <button class="filter" data-filter="done" role="tab" aria-selected="false">Concluidas</button>
+          </div>
+        </div>
+
+        <p id="status" class="status" aria-live="polite"></p>
+        <ul id="todo-list" class="todo-list"></ul>
+      </section>
+    </main>
+  </body>
+</html>

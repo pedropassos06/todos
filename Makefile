@@ -1,20 +1,23 @@
-BIN_DIR=bin
-BINARY=$(BIN_DIR)/bootstrap
-ZIP_FILE=function.zip
 COMPOSE=docker compose
 
-.PHONY: build package clean start restart stop logs ps
+.PHONY: build backend-build frontend-build package test clean start restart stop logs ps
 
-build:
-	mkdir -p $(BIN_DIR)
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o $(BINARY) ./cmd/lambda
+build: backend-build frontend-build
 
-package: build
-	zip -j $(ZIP_FILE) $(BINARY)
+backend-build:
+	$(MAKE) -C backend build
+
+frontend-build:
+	npm --prefix frontend run build
+
+package:
+	$(MAKE) -C backend package
+
+test:
+	$(MAKE) -C backend test
 
 clean:
-	rm -f $(BINARY) $(ZIP_FILE)
-	rmdir --ignore-fail-on-non-empty $(BIN_DIR)
+	$(MAKE) -C backend clean
 
 start:
 	$(COMPOSE) up --build -d --remove-orphans

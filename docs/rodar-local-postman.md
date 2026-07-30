@@ -1,6 +1,6 @@
 # Rodar localmente e testar com Postman
 
-O projeto usa um servidor HTTP local que reaproveita os mesmos handlers da
+O backend usa um servidor HTTP local que reaproveita os mesmos handlers da
 AWS Lambda. O DynamoDB e executado pelo LocalStack.
 
 ## 1. Pre-requisitos
@@ -20,6 +20,7 @@ Depois, edite o `.env` se necessario:
 - `TABLE_NAME`
 - `AWS_REGION`
 - `DYNAMODB_ENDPOINT`
+- `ALLOWED_ORIGIN`
 
 ## 3. Subir o ambiente
 
