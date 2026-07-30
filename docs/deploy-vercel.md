@@ -1,7 +1,7 @@
 # Deploy do frontend na Vercel
 
-Este guia publica somente o frontend. Antes de começar, o backend deve estar
-publicado e a URL da API deve estar disponível.
+Este guia publica somente o frontend. Se o seu backend não estiver publicado ainda, lembre de voltar aqui depois de publicar
+pra atualizar a URL da API.
 
 ## Configuração
 
