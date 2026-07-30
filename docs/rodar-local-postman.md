@@ -1,28 +1,41 @@
 # Rodar localmente e testar com Postman
 
-O backend usa um servidor HTTP local que reaproveita os mesmos handlers da
-AWS Lambda. O DynamoDB e executado pelo LocalStack.
+O ambiente local executa o servidor Go e um DynamoDB no LocalStack. O servidor
+converte cada requisição HTTP para o mesmo evento API Gateway v2 usado pela
+Lambda, portanto exercita os mesmos handlers do deploy AWS.
 
-## 1. Pre-requisitos
+## 1. Pré-requisitos
 
-- Docker
+- Docker com Docker Compose;
+- portas `4566` e `8081` livres.
 
-## 2. Configurar variaveis de ambiente
+Go só é necessário para executar `make test` ou compilar fora do Docker.
 
-Na raiz do projeto:
+## 2. Configurar o ambiente
+
+Na raiz do projeto (`todos/`):
 
 ```bash
 cp .env.example .env
 ```
 
-Depois, edite o `.env` se necessario:
+O arquivo de exemplo já contém os valores locais:
 
-- `TABLE_NAME`
-- `AWS_REGION`
-- `DYNAMODB_ENDPOINT`
-- `ALLOWED_ORIGIN`
+```dotenv
+TABLE_NAME=todos-table
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+DYNAMODB_ENDPOINT=http://localstack:4566
+ALLOWED_ORIGIN=http://localhost:5173
+```
 
-## 3. Subir o ambiente
+As credenciais `test` são fictícias e servem apenas para o LocalStack. Não use
+esses valores no deploy AWS.
+
+## 3. Subir e conferir os serviços
+
+Na raiz do projeto:
 
 ```bash
 make start
@@ -34,10 +47,10 @@ A tabela DynamoDB e criada automaticamente no LocalStack.
 
 ### Criar tarefa
 
-- Metodo: `POST`
+- Método: `POST`
 - URL: `http://localhost:8081/todos`
 - Header: `Content-Type: application/json`
-- Body (raw JSON):
+- Body: **raw > JSON**
 
 ```json
 {
@@ -45,7 +58,39 @@ A tabela DynamoDB e criada automaticamente no LocalStack.
 }
 ```
 
+Isso deve retornar com sucesso e código 201.
+
 ### Listar tarefas
 
-- Metodo: `GET`
+- Método: `GET`
 - URL: `http://localhost:8081/todos`
+
+Resposta esperada: `200 OK`.
+
+Quando a tabela está vazia, a resposta é `{"todos":[]}`.
+
+
+## Parar ou recriar o ambiente
+
+```bash
+make stop
+```
+
+O `docker compose down` remove os containers e a rede. Como o projeto não
+configura volume persistente para o LocalStack, os dados locais são descartados
+quando o serviço é removido.
+
+Para subir tudo novamente:
+
+```bash
+make start
+```
+
+## Problemas comuns
+
+- Porta ocupada: libere `4566` ou `8081` antes de executar `make start`.
+- API retorna `500`: consulte `make logs` e confira o `.env`.
+- Tabela não existe: execute `make stop` e `make start` para rodar novamente o
+  script de inicialização do LocalStack.
+- Frontend bloqueado por CORS: mantenha
+  `ALLOWED_ORIGIN=http://localhost:5173` no ambiente local.

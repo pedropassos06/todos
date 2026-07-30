@@ -1,23 +1,24 @@
 # Todos
 
-Todo application with two independent components:
+Aplicação de tarefas com dois componentes independentes:
 
-- `backend/`: Go API using DynamoDB.
-- `frontend/`: Vite web application.
+- `backend/`: API Go com DynamoDB.
+- `frontend/`: aplicação web Vite.
 
-## Requirements
+## Requisitos
 
-- Docker and Docker Compose
+- Docker e Docker Compose
 - Node.js 20+
 - npm
 
-Go is only required when building or testing the backend outside Docker.
+Go 1.24, `make` e `zip` são necessários para testar e empacotar a Lambda fora
+do Docker.
 
-## Run locally
+## Executar localmente
 
-### 1. Start the backend
+### 1. Iniciar o backend
 
-Open a terminal from the project root:
+Na raiz do projeto:
 
 ```bash
 cp .env.example .env
@@ -25,14 +26,14 @@ cd backend
 make start
 ```
 
-This starts the backend and DynamoDB through Docker Compose. The API is
-available at `http://localhost:8081`.
+Isso inicia o backend e o DynamoDB via Docker Compose. A API fica disponível
+em `http://localhost:8081`.
 
-The environment file only needs to be copied the first time.
+O arquivo de ambiente só precisa ser copiado na primeira execução.
 
-### 2. Start the frontend
+### 2. Iniciar o frontend
 
-Open another terminal from the project root:
+Em outro terminal, na raiz do projeto:
 
 ```bash
 cd frontend
@@ -40,22 +41,22 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Abra `http://localhost:5173`.
 
-`npm install` only needs to be run the first time or when dependencies change.
-The frontend uses `http://localhost:8081` by default.
+`npm install` só precisa ser executado na primeira vez ou quando as
+dependências mudarem. Por padrão, o frontend consulta o backend em `http://localhost:8081`.
 
-## Stop the backend
+## Parar o backend
 
-From `backend/`:
+Na raiz:
 
 ```bash
 make stop
 ```
 
-## Useful commands
+## Comandos úteis
 
-Backend commands are run from `backend/`:
+Comandos do backend, executados em `backend/`:
 
 ```bash
 make start
@@ -65,7 +66,7 @@ make test
 make package
 ```
 
-Frontend commands are run from `frontend/`:
+Comandos do frontend, executados em `frontend/`:
 
 ```bash
 npm run dev
@@ -73,11 +74,16 @@ npm run build
 npm run preview
 ```
 
-## Production deployment
+## Documentação
 
-- Backend: AWS Lambda, API Gateway and DynamoDB.
+- [Executar localmente e testar a API](docs/rodar-local-postman.md)
+- [Deploy manual do backend no Console da AWS](docs/deploy-manual-aws-console.md)
+- [Deploy do frontend](frontend/README.md)
+
+## Produção
+
+- Backend: AWS Lambda, API Gateway HTTP API, DynamoDB e CloudWatch Logs.
 - Frontend: Vercel.
 
-See [`docs/deploy-manual-aws-console.md`](docs/deploy-manual-aws-console.md)
-for the AWS instructions. The frontend deployment settings are documented in
-[`frontend/README.md`](frontend/README.md).
+Siga o guia da AWS do início ao fim: ele inclui pacote ARM64, IAM com privilégio
+mínimo, variáveis, rotas, CORS, testes e diagnóstico.
