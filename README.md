@@ -78,7 +78,8 @@ npm run preview
 
 - [Executar localmente e testar a API](docs/rodar-local-postman.md)
 - [Deploy manual do backend no Console da AWS](docs/deploy-manual-aws-console.md)
-- [Deploy do frontend](frontend/README.md)
+- [Deploy do frontend na Vercel](docs/deploy-vercel.md)
+- [Detalhes do frontend](frontend/README.md)
 
 ## Produção
 

@@ -1,49 +1,39 @@
 # Frontend
 
-Vite web application for the Todos API.
+Aplicação web Vite para a API de tarefas.
 
-## Run locally
+## Executar localmente
 
-Start the backend first. Then, from this directory:
+Inicie o backend primeiro. Depois, execute os comandos abaixo neste diretório:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The frontend uses
-`http://localhost:8081` by default, so no frontend environment file is
-required for local development.
+Acesse `http://localhost:5173`. Por padrão, o frontend utiliza
+`http://localhost:8081`, portanto não é necessário criar um arquivo de
+variáveis de ambiente para o desenvolvimento local.
 
-## Production build
+## Build de produção
 
 ```bash
 npm run build
 npm run preview
 ```
 
-The generated files are written to `dist/`.
+Os arquivos gerados são salvos no diretório `dist/`.
 
-## Deploy to Vercel
+## Deploy na Vercel
 
-Import the repository and configure:
+Siga o [guia de deploy na Vercel](../docs/deploy-vercel.md).
 
-- Root Directory: `frontend`
-- Framework Preset: Vite
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Environment Variable:
-  `VITE_API_BASE_URL=https://SUA-API.execute-api.REGIAO.amazonaws.com`
-
-After deployment, configure the Vercel URL as `ALLOWED_ORIGIN` in the
-backend Lambda.
-
-## Docker deployment
+## Deploy com Docker
 
 ```bash
 docker build -t todos-frontend .
 docker run --rm -p 8080:80 -e API_BASE_URL="https://sua-api.exemplo.com" todos-frontend
 ```
 
-The Docker image reads `API_BASE_URL` when its container starts. Vercel uses
-`VITE_API_BASE_URL` during the build instead.
+A imagem Docker lê `API_BASE_URL` quando o contêiner é iniciado. Na Vercel,
+utilize `VITE_API_BASE_URL`, que é aplicada durante o build.
