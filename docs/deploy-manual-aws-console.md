@@ -47,18 +47,9 @@ Na raiz do projeto (`todos/`):
 make clean
 make test
 make package
-unzip -l backend/function.zip
 ```
 
-O último comando deve mostrar um arquivo chamado `bootstrap` diretamente na
-raiz do ZIP. O `Makefile` compila para Linux ARM64, portanto a Lambda também
-precisa usar a arquitetura `arm64`.
-
-Artefato que será enviado:
-
-```text
-backend/function.zip
-```
+Note que um arquivo `function.zip` foi criado em `todos/backend`.
 
 ## 3. Criar a tabela DynamoDB
 
@@ -70,7 +61,6 @@ No Console da AWS:
    - **Table name:** `todos-table` ou o valor de `NOME_TABELA`;
    - **Partition key:** `id`;
    - **Partition key type:** `String`;
-   - **Sort key:** deixe desmarcada;
    - **Table settings:** `Default settings`.
 4. Crie a tabela e aguarde o status **Active**.
 
@@ -185,10 +175,11 @@ Salve e aguarde a atualização terminar.
 
 1. Abra **API Gateway > APIs > Create API**.
 2. Em **HTTP API**, escolha **Build**. Não escolha REST API.
-3. Em **Integrations**, selecione `Lambda`.
-4. Escolha a região e a Lambda `todos-api`.
-5. Dê um nome à API, por exemplo `todos-http-api`.
-6. Adicione estas cinco rotas, todas apontando para a mesma integração:
+3. Dê um nome à API, por exemplo `todos-http-api`.
+4. Em **Integrations**, selecione `Lambda`.
+5. Escolha a região e a Lambda `todos-api`.
+6. Vá para o próximo passo
+7. Adicione estas cinco rotas, todas apontando para a mesma integração:
 
 | Método | Recurso |
 | --- | --- |
@@ -198,114 +189,25 @@ Salve e aguarde a atualização terminar.
 | `DELETE` | `/todos/{id}` |
 | `OPTIONS` | `/{proxy+}` |
 
-7. Use o stage `$default` com **Auto-deploy** habilitado.
-8. Revise e crie a API.
-
-Abra **Integrations**, selecione a integração da Lambda e confirme:
-
-```text
-Payload format version: 2.0
-```
-
-O backend usa o evento `APIGatewayV2HTTPRequest`, portanto o payload `2.0` é
-obrigatório.
+8. Use o stage `$default` com **Auto-deploy** habilitado.
+9. Revise e crie a API.
 
 ### CORS: configuração usada por este projeto
 
 Em **CORS** no API Gateway, deixe o CORS nativo **desativado**. O backend já
-retorna os cabeçalhos:
-
-```text
-Access-Control-Allow-Origin
-Access-Control-Allow-Headers
-Access-Control-Allow-Methods
-```
-
-A rota `OPTIONS /{proxy+}` encaminha o preflight à Lambda. Se o CORS nativo do
-HTTP API for habilitado, o API Gateway passa a ignorar os cabeçalhos CORS
-retornados pela Lambda e `ALLOWED_ORIGIN` deixa de controlar a origem efetiva.
-Use uma estratégia ou a outra, não as duas.
-
-Ao criar a integração pelo Console, o API Gateway normalmente adiciona à
-Lambda a permissão para invocá-la. Em **Lambda > Configuration >
-Permissions > Resource-based policy statements**, confirme que há uma
-permissão com principal `apigateway.amazonaws.com`.
+retorna os cabeçalhos.
 
 ## 8. Testar o backend publicado
 
-Na página da API, copie o **Invoke URL** do stage `$default`. Ele se parece
-com:
+Vá em API Gateway > Stages > $default
+
+Você vai ver um Invoke URL que se parece com:
 
 ```text
 https://abc123.execute-api.us-east-1.amazonaws.com
 ```
 
-Defina a URL no terminal:
-
-```bash
-API_URL="https://abc123.execute-api.us-east-1.amazonaws.com"
-```
-
-Não acrescente o nome do stage quando estiver usando `$default`.
-
-### Criar
-
-```bash
-curl --fail-with-body -i -X POST "$API_URL/todos" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Validar deploy na AWS"}'
-```
-
-Espere `HTTP 201`. Copie o campo `id` retornado.
-
-### Listar
-
-```bash
-curl --fail-with-body -i "$API_URL/todos"
-```
-
-Espere `HTTP 200` e um JSON no formato `{"todos":[...]}`.
-
-### Atualizar
-
-```bash
-TODO_ID="ID_RETORNADO_NO_POST"
-
-curl --fail-with-body -i -X PATCH "$API_URL/todos/$TODO_ID" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Deploy validado","completed":true}'
-```
-
-Espere `HTTP 200`.
-
-### Excluir
-
-```bash
-curl --fail-with-body -i -X DELETE "$API_URL/todos/$TODO_ID"
-```
-
-Espere `HTTP 204`.
-
-### Validar o preflight CORS
-
-Use exatamente a origem configurada em `ALLOWED_ORIGIN`:
-
-```bash
-FRONTEND_ORIGIN="https://seu-projeto.vercel.app"
-
-curl --fail-with-body -i -X OPTIONS "$API_URL/todos" \
-  -H "Origin: $FRONTEND_ORIGIN" \
-  -H "Access-Control-Request-Method: POST" \
-  -H "Access-Control-Request-Headers: Content-Type"
-```
-
-Espere `HTTP 204` e, entre os cabeçalhos:
-
-```text
-Access-Control-Allow-Origin: https://seu-projeto.vercel.app
-Access-Control-Allow-Headers: Content-Type
-Access-Control-Allow-Methods: GET,POST,PATCH,DELETE,OPTIONS
-```
+Copie e você pode usar ele através do Postman.
 
 ## 9. Ligar o frontend ao backend
 
@@ -325,7 +227,7 @@ ALLOWED_ORIGIN=https://URL-EXATA-DO-FRONTEND
 Não coloque `/todos` em `VITE_API_BASE_URL`: o frontend acrescenta esse
 caminho.
 
-## 10. Diagnóstico
+## 10. Diagnóstico [OPCIONAL]
 
 ### `Internal Server Error` ou resposta `500`
 
