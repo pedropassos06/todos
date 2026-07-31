@@ -57,11 +57,9 @@ parte da API.
 ## 3. Excluir a função Lambda
 
 1. Abra **Lambda > Functions** e confirme a região.
-2. Selecione `todos-api` ou o valor de `NOME_LAMBDA`.
-3. Confira em **Configuration > Environment variables** se `TABLE_NAME`
-   aponta para a tabela deste projeto.
-4. Escolha **Actions > Delete function**.
-5. Digite a confirmação solicitada pelo Console e exclua a função.
+2. Selecione `todos-api`.
+3. Escolha **Actions > Delete function**.
+4. Digite a confirmação solicitada pelo Console e exclua a função.
 
 A exclusão da função remove seu código, configurações, variáveis de ambiente e
 resource policy. Ela não exclui automaticamente o log group do CloudWatch nem
@@ -71,9 +69,8 @@ a role de execução.
 
 Este passo remove o histórico de logs e evita que ele permaneça armazenado:
 
-1. Abra **CloudWatch > Logs > Log groups** e confirme a região.
-2. Localize `/aws/lambda/todos-api` ou
-   `/aws/lambda/<NOME_LAMBDA>`.
+1. Abra **CloudWatch > Logs > Log Management** (sempre confira a região).
+2. Localize `/aws/lambda/todos-api`.
 3. Selecione somente esse log group.
 4. Escolha **Actions > Delete log group(s)** e confirme.
 
@@ -86,33 +83,19 @@ IAM é um serviço global; mesmo assim, confirme que a role é a usada pela
 função removida.
 
 1. Abra **IAM > Roles**.
-2. Entre em `todos-lambda-role` ou no valor de `NOME_ROLE`.
-3. Em **Permissions**, confirme que ela possui:
-   - a policy gerenciada `AWSLambdaBasicExecutionRole`;
-   - a inline policy `todos-table-access`.
-4. Em **Trust relationships**, confirme que o principal de confiança é
-   `lambda.amazonaws.com`.
-5. Verifique a data da última atividade e certifique-se de que nenhuma outra
-   função ou aplicação usa essa role.
-6. Escolha **Delete**, digite o nome da role e confirme.
-
-Ao excluir a role, a inline policy é excluída junto com ela. A policy gerenciada
-`AWSLambdaBasicExecutionRole` pertence à AWS e não deve ser excluída.
-
-Se a role estiver sendo usada por outro recurso, não a exclua. Nesse caso,
-remova apenas a inline policy `todos-table-access` e mantenha a role e as
-demais permissões necessárias ao outro recurso.
+2. Selecione `todos-lambda-role`.
+3. Verifique que esse é exatamente o role que você criou incialmente.
+4. Escolha **Delete**, digite o nome da role e confirme.
 
 ## 6. Excluir a tabela DynamoDB
 
 Faça esta etapa por último, pois ela apaga permanentemente os dados:
 
 1. Abra **DynamoDB > Tables** e confirme a região.
-2. Selecione `todos-table` ou o valor de `NOME_TABELA`.
-3. Confira o ARN e confirme que é a tabela deste projeto.
-4. Escolha **Delete**.
-5. Se o Console oferecer a criação de um backup antes da exclusão, escolha a
-   opção de acordo com a decisão tomada no passo 2.
+2. Selecione `todos-table`.
+3. Escolha **Delete**.
+4. Selecione para deletar todos os alarmes CloudWatch.
+5. Não precisa selecionar a opção de **backup**, a não ser que você realmente precise.
 6. Digite a confirmação solicitada e exclua a tabela.
 7. Aguarde até que ela desapareça da lista de tabelas.
 
