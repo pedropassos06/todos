@@ -135,4 +135,9 @@ manualmente quando não precisar mais dos dados.
 
 O arquivo local `backend/function.zip` não é um recurso da AWS e não é afetado
 por este procedimento. Para removê-lo e limpar outros artefatos locais de
-build, execute `make clean` na raiz do projeto.
+build, execute os comandos abaixo em `backend/`:
+
+```bash
+cd backend
+make clean
+```

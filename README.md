@@ -21,7 +21,6 @@ do Docker.
 Na raiz do projeto:
 
 ```bash
-cp .env.example .env
 cd backend
 make start
 ```
@@ -29,7 +28,8 @@ make start
 Isso inicia o backend e o DynamoDB via Docker Compose. A API fica disponível
 em `http://localhost:8081`.
 
-O arquivo de ambiente só precisa ser copiado na primeira execução.
+Na primeira execução, o `make start` cria `backend/.env` automaticamente a
+partir de `backend/.env.example`.
 
 ### 2. Iniciar o frontend
 
@@ -46,11 +46,14 @@ Abra `http://localhost:5173`.
 `npm install` só precisa ser executado na primeira vez ou quando as
 dependências mudarem. Por padrão, o frontend consulta o backend em `http://localhost:8081`.
 
+Pronto: sem configuração adicional para ambiente local.
+
 ## Parar o backend
 
-Na raiz:
+Dentro de `backend/`:
 
 ```bash
+cd backend
 make stop
 ```
 
@@ -76,9 +79,9 @@ npm run preview
 
 ## Documentação
 
-- [Executar localmente e testar a API](docs/rodar-local-postman.md)
-- [Deploy manual do backend no Console da AWS](docs/deploy-manual-aws-console.md)
-- [Deploy do frontend na Vercel](docs/deploy-vercel.md)
+- [Executar localmente e testar a API](backend/docs/rodar-local-postman.md)
+- [Deploy manual do backend no Console da AWS](backend/docs/deploy-manual-aws-console.md)
+- [Deploy do frontend na Vercel](frontend/docs/deploy-vercel.md)
 - [Detalhes do frontend](frontend/README.md)
 
 ## Produção

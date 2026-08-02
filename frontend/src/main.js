@@ -2,7 +2,9 @@ import "./style.css";
 
 const runtimeConfig = window.__APP_CONFIG__ || {};
 const buildApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const apiBaseUrl = String(runtimeConfig.API_BASE_URL || buildApiBaseUrl || "http://localhost:8081").replace(/\/$/, "");
+const browserHost = window.location.hostname || "localhost";
+const defaultApiBaseUrl = `http://${browserHost}:8081`;
+const apiBaseUrl = String(runtimeConfig.API_BASE_URL || buildApiBaseUrl || defaultApiBaseUrl).replace(/\/$/, "");
 
 const form = document.querySelector("#todo-form");
 const input = document.querySelector("#todo-input");

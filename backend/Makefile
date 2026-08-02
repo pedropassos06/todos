@@ -3,9 +3,15 @@ BINARY=$(BIN_DIR)/bootstrap
 ZIP_FILE=function.zip
 COMPOSE=docker compose --project-directory .. -f ../docker-compose.yml
 
-.PHONY: start stop logs build package test clean
+.PHONY: start restart stop logs ps build package test clean
 
 start:
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; fi
+	$(COMPOSE) up --build -d --remove-orphans
+
+restart:
+	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; fi
+	$(COMPOSE) down --remove-orphans
 	$(COMPOSE) up --build -d --remove-orphans
 
 stop:
@@ -13,6 +19,9 @@ stop:
 
 logs:
 	$(COMPOSE) logs -f server
+
+ps:
+	$(COMPOSE) ps
 
 build:
 	mkdir -p $(BIN_DIR)

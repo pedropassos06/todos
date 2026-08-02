@@ -12,8 +12,7 @@ npm run dev
 ```
 
 Acesse `http://localhost:5173`. Por padrão, o frontend utiliza
-`http://localhost:8081`, portanto não é necessário criar um arquivo de
-variáveis de ambiente para o desenvolvimento local.
+`http://localhost:8081` como backend.
 
 ## Build de produção
 
@@ -26,7 +25,7 @@ Os arquivos gerados são salvos no diretório `dist/`.
 
 ## Deploy na Vercel
 
-Siga o [guia de deploy na Vercel](../docs/deploy-vercel.md).
+Siga o [guia de deploy na Vercel](./docs/deploy-vercel.md).
 
 ## Deploy com Docker
 

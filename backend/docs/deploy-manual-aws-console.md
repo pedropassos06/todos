@@ -41,9 +41,10 @@ depois do deploy do frontend.
 
 ## 2. Gerar e conferir o pacote da Lambda
 
-Na raiz do projeto (`todos/`):
+Dentro de `backend/`:
 
 ```bash
+cd backend
 make clean
 make test
 make package
@@ -274,6 +275,7 @@ Confirme os três itens em conjunto:
 Depois de alterar o backend:
 
 ```bash
+cd backend
 make test
 make clean
 make package

@@ -16,7 +16,7 @@ Go só é necessário para executar `make test` ou compilar fora do Docker.
 Na raiz do projeto (`todos/`):
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
 O arquivo de exemplo já contém os valores locais:
@@ -33,11 +33,14 @@ ALLOWED_ORIGIN=http://localhost:5173
 As credenciais `test` são fictícias e servem apenas para o LocalStack. Não use
 esses valores no deploy AWS.
 
+Essas variáveis do `backend/.env.example` atendem apenas ao backend no ambiente local.
+
 ## 3. Subir e conferir os serviços
 
-Na raiz do projeto:
+Dentro de `backend/`:
 
 ```bash
+cd backend
 make start
 ```
 
@@ -73,6 +76,7 @@ Quando a tabela está vazia, a resposta é `{"todos":[]}`.
 ## Parar ou recriar o ambiente
 
 ```bash
+cd backend
 make stop
 ```
 
@@ -83,6 +87,7 @@ quando o serviço é removido.
 Para subir tudo novamente:
 
 ```bash
+cd backend
 make start
 ```
 

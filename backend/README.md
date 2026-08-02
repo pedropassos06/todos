@@ -17,15 +17,14 @@ O ponto de entrada local é `cmd/server`; o da Lambda é `cmd/lambda`.
 Na raiz do projeto:
 
 ```bash
-cp .env.example .env
 cd backend
 make start
 ```
 
 A API fica disponível em `http://localhost:8081`.
 
-O arquivo só precisa ser copiado na primeira execução. `make start` inicia a
-API e o DynamoDB no LocalStack.
+Na primeira execução, `make start` cria `backend/.env` automaticamente a
+partir de `backend/.env.example` e inicia a API com o DynamoDB no LocalStack.
 
 ## Comandos
 
@@ -43,7 +42,11 @@ make clean    # Remove backend build artifacts
 
 A Lambda usa somente `TABLE_NAME` e `ALLOWED_ORIGIN` como variáveis próprias
 da aplicação em produção. `AWS_REGION`, credenciais fictícias e
-`DYNAMODB_ENDPOINT` no `.env` da raiz são para o LocalStack.
+`DYNAMODB_ENDPOINT` no `backend/.env` são para o LocalStack.
+
+No `.env` local, você pode usar `ALLOWED_ORIGIN=*` para evitar bloqueios de
+CORS em diferentes hosts de desenvolvimento. Em produção, configure a origem
+exata do frontend.
 
 ## Rotas
 
@@ -56,7 +59,7 @@ da aplicação em produção. `AWS_REGION`, credenciais fictícias e
 | `OPTIONS` | qualquer rota configurada no API Gateway | `204` |
 
 O contrato completo e os exemplos estão em
-[`../docs/rodar-local-postman.md`](../docs/rodar-local-postman.md).
+[`./docs/rodar-local-postman.md`](./docs/rodar-local-postman.md).
 
 O deploy manual na AWS está em
-[`../docs/deploy-manual-aws-console.md`](../docs/deploy-manual-aws-console.md).
+[`./docs/deploy-manual-aws-console.md`](./docs/deploy-manual-aws-console.md).

@@ -1,4 +1,5 @@
 .env
+backend/.env
 backend/function.zip
 backend/bin/
 frontend/dist/
