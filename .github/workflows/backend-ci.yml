@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-lambda-package
-          path: backend/function.zip
+          path: backend/bin/function.zip
           retention-days: 7
 
   deploy:
@@ -89,7 +89,6 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       CFN_STACK_NAME: ${{ vars.CFN_STACK_NAME || 'todos-backend-prod' }}
-      LAMBDA_ARTIFACT_BUCKET: ${{ vars.LAMBDA_ARTIFACT_BUCKET }}
       TABLE_NAME: ${{ vars.TABLE_NAME || 'todos-table' }}
       FUNCTION_NAME: ${{ vars.FUNCTION_NAME || 'todos-api' }}
       ALLOWED_ORIGIN: ${{ vars.ALLOWED_ORIGIN || '*' }}
@@ -108,10 +107,6 @@ jobs:
       - name: Validate deploy configuration
         run: |
           set -euo pipefail
-          if [ -z "${LAMBDA_ARTIFACT_BUCKET}" ]; then
-            echo "Missing repository variable LAMBDA_ARTIFACT_BUCKET"
-            exit 1
-          fi
           if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
             echo "Missing AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY secret"
             exit 1
@@ -124,17 +119,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Define artifact key
-        id: artifact
+      - name: Verify Lambda package artifact
         run: |
           set -euo pipefail
-          s3_key="lambda/backend/${GITHUB_SHA}/function.zip"
-          echo "s3_key=${s3_key}" >> "$GITHUB_OUTPUT"
+          test -f backend/bin/function.zip || (echo "Lambda artifact backend/bin/function.zip not found" && exit 1)
 
-      - name: Upload package to S3
+      - name: Validate Lambda exists
         run: |
           set -euo pipefail
-          aws s3 cp backend/function.zip "s3://${LAMBDA_ARTIFACT_BUCKET}/${{ steps.artifact.outputs.s3_key }}"
+          aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${AWS_REGION}" >/dev/null
+
+      - name: Update Lambda code and configuration from local zip
+        run: |
+          set -euo pipefail
+          aws lambda update-function-code \
+            --function-name "${FUNCTION_NAME}" \
+            --zip-file "fileb://backend/bin/function.zip" \
+            --region "${AWS_REGION}"
+
+          aws lambda update-function-configuration \
+            --function-name "${FUNCTION_NAME}" \
+            --memory-size "${LAMBDA_MEMORY}" \
+            --timeout "${LAMBDA_TIMEOUT}" \
+            --environment "Variables={TABLE_NAME=${TABLE_NAME},ALLOWED_ORIGIN=${ALLOWED_ORIGIN}}" \
+            --region "${AWS_REGION}"
+
+          aws lambda wait function-updated \
+            --function-name "${FUNCTION_NAME}" \
+            --region "${AWS_REGION}"
 
       - name: Deploy CloudFormation stack
         run: |
@@ -148,10 +160,6 @@ jobs:
               TableName="${TABLE_NAME}" \
               FunctionName="${FUNCTION_NAME}" \
               AllowedOrigin="${ALLOWED_ORIGIN}" \
-              LambdaCodeS3Bucket="${LAMBDA_ARTIFACT_BUCKET}" \
-              LambdaCodeS3Key="${{ steps.artifact.outputs.s3_key }}" \
-              LambdaMemory="${LAMBDA_MEMORY}" \
-              LambdaTimeout="${LAMBDA_TIMEOUT}" \
             --region "${AWS_REGION}"
 
       - name: Publish stack outputs
@@ -172,7 +180,7 @@ jobs:
             echo ""
             echo "- Region: ${AWS_REGION}"
             echo "- Stack: ${CFN_STACK_NAME}"
-            echo "- Artifact: s3://${LAMBDA_ARTIFACT_BUCKET}/${{ steps.artifact.outputs.s3_key }}"
+            echo "- Artifact: backend/bin/function.zip"
             echo "- API Endpoint: ${API_ENDPOINT}"
             echo "- Lambda: ${LAMBDA_NAME}"
             echo "- DynamoDB Table: ${TABLE}"

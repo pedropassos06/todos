@@ -133,7 +133,7 @@ Se você criou um backup no passo 2, ele continuará listado em
 **DynamoDB > Backups**. Mantenha-o apenas pelo tempo necessário e exclua-o
 manualmente quando não precisar mais dos dados.
 
-O arquivo local `backend/function.zip` não é um recurso da AWS e não é afetado
+O arquivo local `backend/bin/function.zip` não é um recurso da AWS e não é afetado
 por este procedimento. Para removê-lo e limpar outros artefatos locais de
 build, execute os comandos abaixo em `backend/`:
 

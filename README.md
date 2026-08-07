@@ -104,7 +104,7 @@ mudanças de `backend/**`, e executa:
 - análise estática (`go vet ./...`);
 - testes (`make test`);
 - verificação de dependências (`go mod tidy` sem diff pendente);
-- build e empacotamento da Lambda (`make package`), publicando `function.zip`
-	como artifact do workflow.
+- build e empacotamento da Lambda (`make package`), publicando
+  `backend/bin/function.zip` como artifact do workflow.
 
 Nesta primeira versão, o deploy na AWS continua manual.

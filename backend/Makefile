@@ -1,9 +1,11 @@
 BIN_DIR=bin
 BINARY=$(BIN_DIR)/bootstrap
-ZIP_FILE=function.zip
+ZIP_FILE=$(BIN_DIR)/function.zip
+AWS_REGION?=us-east-1
+FUNCTION_NAME?=todos-api
 COMPOSE=docker compose --project-directory .. -f ../docker-compose.yml
 
-.PHONY: start restart stop logs ps build package test clean
+.PHONY: start restart stop logs ps build package deploy-lambda test clean
 
 start:
 	@if [ ! -f .env ]; then cp .env.example .env; echo "Created .env from .env.example"; fi
@@ -29,6 +31,10 @@ build:
 
 package: build
 	zip -j $(ZIP_FILE) $(BINARY)
+
+deploy-lambda: package
+	aws lambda update-function-code --function-name "$(FUNCTION_NAME)" --zip-file "fileb://$(ZIP_FILE)" --region "$(AWS_REGION)"
+	aws lambda wait function-updated --function-name "$(FUNCTION_NAME)" --region "$(AWS_REGION)"
 
 test:
 	go test ./...

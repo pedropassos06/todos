@@ -36,7 +36,8 @@ make stop     # Stop the local services
 make logs     # Follow API logs
 make test     # Run Go tests
 make build    # Build the AWS Lambda executable
-make package  # Generate function.zip for AWS Lambda
+make package  # Generate bin/function.zip for AWS Lambda
+make deploy-lambda AWS_REGION=us-east-1 FUNCTION_NAME=todos-api  # Upload local zip to Lambda
 make clean    # Remove backend build artifacts
 ```
 
@@ -77,7 +78,7 @@ Checks executados:
 - `go vet ./...`;
 - `make test`;
 - `go mod tidy` com verificação de diff limpo;
-- `make package` para gerar `function.zip` como artifact.
+- `make package` para gerar `bin/function.zip` como artifact.
 
 O deploy automatizado do backend está em
 [`./docs/deploy-github-actions.md`](./docs/deploy-github-actions.md).

@@ -6,7 +6,7 @@ workflow de CI/CD do repositório.
 Fluxo automatizado:
 
 ```text
-push na main -> GitHub Actions -> build function.zip -> upload S3 -> CloudFormation deploy
+push na main -> GitHub Actions -> build backend/bin/function.zip -> update Lambda -> CloudFormation deploy
 ```
 
 A stack usa o template em `backend/infra/cloudformation.yaml`.
@@ -16,10 +16,13 @@ A stack usa o template em `backend/infra/cloudformation.yaml`.
 No push para `main` (com mudanças em `backend/**`):
 
 1. valida o backend (`go fmt`, `go vet`, testes, `go mod tidy`);
-2. gera `backend/function.zip`;
-3. envia o zip para um bucket S3 de artefatos;
-4. executa `aws cloudformation deploy` com os parâmetros da stack;
+2. gera `backend/bin/function.zip`;
+3. atualiza o código da Lambda com `aws lambda update-function-code` usando o zip local;
+4. atualiza configuração da Lambda (memória, timeout e variáveis de ambiente);
+5. executa `aws cloudformation deploy` com os parâmetros da stack;
 5. publica um resumo com os outputs (`ApiEndpoint`, `LambdaFunctionName`, `DynamoDBTableName`).
+
+Não há uso de bucket S3 nesse fluxo.
 
 ## 2. Pré-requisitos
 
@@ -27,20 +30,10 @@ No push para `main` (com mudanças em `backend/**`):
   DynamoDB, IAM e CloudWatch Logs via CloudFormation.
 - Repositório no GitHub com Actions habilitado.
 - Branch principal chamada `main`.
+- A função Lambda definida em `FUNCTION_NAME` já deve existir antes do primeiro
+  deploy automático (o workflow só atualiza código/configuração da função).
 
-## 3. Criar bucket S3 de artefatos
-
-Crie um bucket dedicado na mesma região da stack (exemplo: `us-east-1`).
-
-Sugestão de nome:
-
-```text
-todos-backend-artifacts-<account-id>-us-east-1
-```
-
-Esse bucket armazenará o zip da Lambda por commit.
-
-## 4. Criar credencial AWS para o GitHub Actions
+## 3. Criar credencial AWS para o GitHub Actions
 
 Este projeto está configurado para usar secrets com chave estática:
 
@@ -58,9 +51,9 @@ No IAM:
 ### 4.2 Permissões IAM mínimas (policy exemplo)
 
 Anexe uma policy ao usuário com escopo na sua região/conta e, quando possível,
-no bucket e stack específicos.
+na stack específica.
 
-Exemplo inicial funcional (ajuste `REGION`, `ACCOUNT_ID`, `STACK_NAME` e `BUCKET_NAME`):
+Exemplo inicial funcional (ajuste `REGION`, `ACCOUNT_ID` e `STACK_NAME`):
 
 ```json
 {
@@ -97,23 +90,6 @@ Exemplo inicial funcional (ajuste `REGION`, `ACCOUNT_ID`, `STACK_NAME` e `BUCKET
         "cloudformation:ValidateTemplate"
       ],
       "Resource": "*"
-    },
-    {
-      "Sid": "S3Artifacts",
-      "Effect": "Allow",
-      "Action": [
-        "s3:ListBucket"
-      ],
-      "Resource": "arn:aws:s3:::BUCKET_NAME"
-    },
-    {
-      "Sid": "S3ArtifactsObjects",
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject"
-      ],
-      "Resource": "arn:aws:s3:::BUCKET_NAME/*"
     },
     {
       "Sid": "PassRolesCreatedByStack",
@@ -174,7 +150,7 @@ Observação: o bloco `ManageStackResources` está amplo para reduzir chance de
 falha no primeiro deploy. Depois do primeiro deploy estável, você pode reduzir
 escopo com base no CloudTrail.
 
-## 5. Configurar Secrets e Variables no GitHub
+## 4. Configurar Secrets e Variables no GitHub
 
 No repositório, abra Settings > Secrets and variables > Actions.
 
@@ -191,7 +167,6 @@ Crie:
 
 - `AWS_REGION=us-east-1`
 - `CFN_STACK_NAME=todos-backend-prod`
-- `LAMBDA_ARTIFACT_BUCKET=<nome-do-seu-bucket>`
 - `TABLE_NAME=todos-table`
 - `FUNCTION_NAME=todos-api`
 - `ALLOWED_ORIGIN=https://seu-frontend.vercel.app`
@@ -200,20 +175,19 @@ Crie:
 
 Notas:
 
-- `LAMBDA_ARTIFACT_BUCKET` é obrigatório.
 - Em produção, não use `ALLOWED_ORIGIN=*`; use origem exata do frontend.
 - Não inclua `/todos` em `ALLOWED_ORIGIN`.
 
-## 6. Primeiro deploy
+## 5. Primeiro deploy
 
 1. Faça merge de uma alteração em `main` que toque `backend/**`.
 2. Abra a aba Actions e acompanhe o workflow **Backend CI**.
 3. No job `Deploy Backend (AWS)`, confirme:
-   - upload para S3 bem-sucedido;
+  - atualização do código/configuração da Lambda bem-sucedida;
    - `cloudformation deploy` concluído.
 4. Leia o resumo do job para obter `ApiEndpoint`.
 
-## 7. Teste pós-deploy
+## 6. Teste pós-deploy
 
 Teste rápido com `curl`:
 
@@ -238,7 +212,7 @@ Confirme presença de:
 - `Access-Control-Allow-Methods`;
 - `Access-Control-Allow-Headers`.
 
-## 8. Atualizações de configuração
+## 7. Atualizações de configuração
 
 Para alterar memória, timeout, nome de tabela, nome da função ou CORS:
 
@@ -246,11 +220,12 @@ Para alterar memória, timeout, nome de tabela, nome da função ou CORS:
 2. faça novo push em `main` com mudança no backend;
 3. o workflow aplica update na mesma stack.
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
-### Erro: Missing repository variable LAMBDA_ARTIFACT_BUCKET
+### Erro: ResourceNotFoundException em `aws lambda get-function`
 
-Crie a variável `LAMBDA_ARTIFACT_BUCKET` em Actions variables.
+A função em `FUNCTION_NAME` não existe na região configurada. Crie a função
+uma vez (manual/CLI) e rode o workflow novamente.
 
 ### Erro: AccessDenied no deploy
 
@@ -265,7 +240,7 @@ referenciado.
 
 Revise `ALLOWED_ORIGIN` (origem exata, sem `/` final) e faça novo deploy.
 
-## 10. Segurança recomendada (próximo passo)
+## 9. Segurança recomendada (próximo passo)
 
 Para eliminar chaves estáticas no GitHub, migre para OIDC com
 `aws-actions/configure-aws-credentials` assumindo role.

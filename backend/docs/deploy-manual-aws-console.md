@@ -53,7 +53,7 @@ make test
 make package
 ```
 
-Note que um arquivo `function.zip` foi criado em `todos/backend`.
+Note que um arquivo `bin/function.zip` foi criado em `todos/backend`.
 
 ## 3. Criar a tabela DynamoDB
 
@@ -138,7 +138,7 @@ API.
 Na aba **Code**:
 
 1. Escolha **Upload from > .zip file**.
-2. Envie `backend/function.zip`.
+2. Envie `backend/bin/function.zip`.
 3. Clique em **Save** se o Console solicitar.
 
 Em **Code > Runtime settings > Edit**, confirme:
@@ -284,8 +284,16 @@ make clean
 make package
 ```
 
-Envie novamente `backend/function.zip` em **Lambda > Code > Upload from >
+Envie novamente `backend/bin/function.zip` em **Lambda > Code > Upload from >
 .zip file**. Não é necessário recriar a tabela, a role ou a API.
+
+Se preferir evitar o upload manual no Console, você pode atualizar o código da
+Lambda direto pela AWS CLI (sem S3):
+
+```bash
+cd backend
+make deploy-lambda AWS_REGION=us-east-1 FUNCTION_NAME=todos-api
+```
 
 ## 12. Checklist final
 
