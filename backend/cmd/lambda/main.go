@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
-// commit
 func main() {
 	tableName := os.Getenv("TABLE_NAME")
 	if tableName == "" {

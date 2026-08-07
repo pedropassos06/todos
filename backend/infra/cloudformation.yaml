@@ -18,6 +18,24 @@ Parameters:
     Default: '*'
     Description: Exact origin allowed by the backend. Use the frontend origin in production.
 
+  LambdaCodeBucket:
+    Type: String
+    Description: S3 bucket that holds the Lambda deployment zip.
+
+  LambdaCodeKey:
+    Type: String
+    Description: S3 key of the Lambda deployment zip.
+
+  LambdaMemory:
+    Type: Number
+    Default: 128
+    Description: Lambda memory in MB.
+
+  LambdaTimeout:
+    Type: Number
+    Default: 10
+    Description: Lambda timeout in seconds.
+
 Resources:
   TodosTable:
     Type: AWS::DynamoDB::Table
@@ -71,11 +89,30 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${FunctionName}
       RetentionInDays: 14
 
+  TodosLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      Handler: bootstrap
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key: !Ref LambdaCodeKey
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          ALLOWED_ORIGIN: !Ref AllowedOrigin
+
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref FunctionName
+      FunctionName: !Ref TodosLambda
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TodosApi}/*
 
@@ -91,7 +128,7 @@ Resources:
     Properties:
       ApiId: !Ref TodosApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${FunctionName}/invocations
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TodosLambda.Arn}/invocations
       IntegrationMethod: POST
       PayloadFormatVersion: '2.0'
 

@@ -124,29 +124,26 @@ jobs:
           set -euo pipefail
           test -f backend/bin/function.zip || (echo "Lambda artifact backend/bin/function.zip not found" && exit 1)
 
-      - name: Validate Lambda exists
+      - name: Create Lambda artifacts bucket
         run: |
           set -euo pipefail
-          aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${AWS_REGION}" >/dev/null
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          ARTIFACTS_BUCKET="${ACCOUNT_ID}-${CFN_STACK_NAME}-lambda"
+          echo "ARTIFACTS_BUCKET=${ARTIFACTS_BUCKET}" >> "$GITHUB_ENV"
+          if aws s3api head-bucket --bucket "${ARTIFACTS_BUCKET}" 2>/dev/null; then
+            echo "Bucket ${ARTIFACTS_BUCKET} already exists"
+          elif [ "${AWS_REGION}" = "us-east-1" ]; then
+            aws s3api create-bucket --bucket "${ARTIFACTS_BUCKET}"
+          else
+            aws s3api create-bucket --bucket "${ARTIFACTS_BUCKET}" \
+              --create-bucket-configuration LocationConstraint="${AWS_REGION}"
+          fi
 
-      - name: Update Lambda code and configuration from local zip
+      - name: Upload Lambda zip to S3
         run: |
           set -euo pipefail
-          aws lambda update-function-code \
-            --function-name "${FUNCTION_NAME}" \
-            --zip-file "fileb://backend/bin/function.zip" \
-            --region "${AWS_REGION}"
-
-          aws lambda update-function-configuration \
-            --function-name "${FUNCTION_NAME}" \
-            --memory-size "${LAMBDA_MEMORY}" \
-            --timeout "${LAMBDA_TIMEOUT}" \
-            --environment "Variables={TABLE_NAME=${TABLE_NAME},ALLOWED_ORIGIN=${ALLOWED_ORIGIN}}" \
-            --region "${AWS_REGION}"
-
-          aws lambda wait function-updated \
-            --function-name "${FUNCTION_NAME}" \
-            --region "${AWS_REGION}"
+          aws s3 cp backend/bin/function.zip \
+            "s3://${ARTIFACTS_BUCKET}/${CFN_STACK_NAME}/function.zip"
 
       - name: Deploy CloudFormation stack
         run: |
@@ -160,6 +157,10 @@ jobs:
               TableName="${TABLE_NAME}" \
               FunctionName="${FUNCTION_NAME}" \
               AllowedOrigin="${ALLOWED_ORIGIN}" \
+              LambdaCodeBucket="${ARTIFACTS_BUCKET}" \
+              LambdaCodeKey="${CFN_STACK_NAME}/function.zip" \
+              LambdaMemory="${LAMBDA_MEMORY}" \
+              LambdaTimeout="${LAMBDA_TIMEOUT}" \
             --region "${AWS_REGION}"
 
       - name: Publish stack outputs
