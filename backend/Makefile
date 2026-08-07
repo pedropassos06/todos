@@ -34,5 +34,4 @@ test:
 	go test ./...
 
 clean:
-	rm -f $(BINARY) $(ZIP_FILE)
-	rmdir --ignore-fail-on-non-empty $(BIN_DIR)
+	rm -rf $(BIN_DIR) $(ZIP_FILE)
