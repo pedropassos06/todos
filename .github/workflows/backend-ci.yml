@@ -1,0 +1,80 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - backend/**
+      - .github/workflows/backend-ci.yml
+  push:
+    branches: [main]
+    paths:
+      - backend/**
+      - .github/workflows/backend-ci.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: Check formatting
+        run: |
+          output="$(go fmt ./...)"
+          if [ -n "$output" ]; then
+            echo "The following files are not formatted:"
+            echo "$output"
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run tests
+        run: make test
+
+      - name: Ensure go.mod and go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- .
+
+  build_lambda:
+    name: Build Lambda Package
+    runs-on: ubuntu-latest
+    needs: validate
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: Build Lambda zip
+        run: |
+          make clean
+          make package
+
+      - name: Upload Lambda artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-lambda-package
+          path: backend/function.zip
+          retention-days: 7

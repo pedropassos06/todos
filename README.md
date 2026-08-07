@@ -91,3 +91,20 @@ npm run preview
 
 Siga o guia da AWS do início ao fim: ele inclui pacote ARM64, IAM com privilégio
 mínimo, variáveis, rotas, CORS, testes e diagnóstico.
+
+## CI do backend (v1)
+
+O repositório possui uma pipeline inicial de backend em GitHub Actions
+([`.github/workflows/backend-ci.yml`](.github/workflows/backend-ci.yml)).
+
+Ela roda em `push` e `pull_request` da branch `main`, com escopo apenas em
+mudanças de `backend/**`, e executa:
+
+- validação de formatação (`go fmt ./...`);
+- análise estática (`go vet ./...`);
+- testes (`make test`);
+- verificação de dependências (`go mod tidy` sem diff pendente);
+- build e empacotamento da Lambda (`make package`), publicando `function.zip`
+	como artifact do workflow.
+
+Nesta primeira versão, o deploy na AWS continua manual.
