@@ -11,6 +11,9 @@ cliente -> API Gateway HTTP API -> Lambda Go -> DynamoDB
 A API inteira roda em uma única Lambda. O procedimento abaixo usa o Console da
 AWS e o CORS implementado pelo próprio backend.
 
+Se você quer o fluxo automatizado por CI/CD, use
+[`./deploy-github-actions.md`](./deploy-github-actions.md).
+
 ## 1. Antes de começar
 
 Você precisa de:

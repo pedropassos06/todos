@@ -78,3 +78,102 @@ jobs:
           name: backend-lambda-package
           path: backend/function.zip
           retention-days: 7
+
+  deploy:
+    name: Deploy Backend (AWS)
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+      - build_lambda
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      CFN_STACK_NAME: ${{ vars.CFN_STACK_NAME || 'todos-backend-prod' }}
+      LAMBDA_ARTIFACT_BUCKET: ${{ vars.LAMBDA_ARTIFACT_BUCKET }}
+      TABLE_NAME: ${{ vars.TABLE_NAME || 'todos-table' }}
+      FUNCTION_NAME: ${{ vars.FUNCTION_NAME || 'todos-api' }}
+      ALLOWED_ORIGIN: ${{ vars.ALLOWED_ORIGIN || '*' }}
+      LAMBDA_MEMORY: ${{ vars.LAMBDA_MEMORY || '128' }}
+      LAMBDA_TIMEOUT: ${{ vars.LAMBDA_TIMEOUT || '10' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Lambda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-lambda-package
+          path: backend
+
+      - name: Validate deploy configuration
+        run: |
+          set -euo pipefail
+          if [ -z "${LAMBDA_ARTIFACT_BUCKET}" ]; then
+            echo "Missing repository variable LAMBDA_ARTIFACT_BUCKET"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "Missing AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY secret"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Define artifact key
+        id: artifact
+        run: |
+          set -euo pipefail
+          s3_key="lambda/backend/${GITHUB_SHA}/function.zip"
+          echo "s3_key=${s3_key}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload package to S3
+        run: |
+          set -euo pipefail
+          aws s3 cp backend/function.zip "s3://${LAMBDA_ARTIFACT_BUCKET}/${{ steps.artifact.outputs.s3_key }}"
+
+      - name: Deploy CloudFormation stack
+        run: |
+          set -euo pipefail
+          aws cloudformation deploy \
+            --stack-name "${CFN_STACK_NAME}" \
+            --template-file backend/infra/cloudformation.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              TableName="${TABLE_NAME}" \
+              FunctionName="${FUNCTION_NAME}" \
+              AllowedOrigin="${ALLOWED_ORIGIN}" \
+              LambdaCodeS3Bucket="${LAMBDA_ARTIFACT_BUCKET}" \
+              LambdaCodeS3Key="${{ steps.artifact.outputs.s3_key }}" \
+              LambdaMemory="${LAMBDA_MEMORY}" \
+              LambdaTimeout="${LAMBDA_TIMEOUT}" \
+            --region "${AWS_REGION}"
+
+      - name: Publish stack outputs
+        run: |
+          set -euo pipefail
+          aws cloudformation describe-stacks \
+            --stack-name "${CFN_STACK_NAME}" \
+            --region "${AWS_REGION}" \
+            --query "Stacks[0].Outputs" \
+            --output table
+
+          API_ENDPOINT="$(aws cloudformation describe-stacks --stack-name "${CFN_STACK_NAME}" --region "${AWS_REGION}" --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" --output text)"
+          LAMBDA_NAME="$(aws cloudformation describe-stacks --stack-name "${CFN_STACK_NAME}" --region "${AWS_REGION}" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text)"
+          TABLE="$(aws cloudformation describe-stacks --stack-name "${CFN_STACK_NAME}" --region "${AWS_REGION}" --query "Stacks[0].Outputs[?OutputKey=='DynamoDBTableName'].OutputValue" --output text)"
+
+          {
+            echo "## Backend Deploy Summary"
+            echo ""
+            echo "- Region: ${AWS_REGION}"
+            echo "- Stack: ${CFN_STACK_NAME}"
+            echo "- Artifact: s3://${LAMBDA_ARTIFACT_BUCKET}/${{ steps.artifact.outputs.s3_key }}"
+            echo "- API Endpoint: ${API_ENDPOINT}"
+            echo "- Lambda: ${LAMBDA_NAME}"
+            echo "- DynamoDB Table: ${TABLE}"
+          } >> "$GITHUB_STEP_SUMMARY"

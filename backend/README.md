@@ -64,7 +64,7 @@ O contrato completo e os exemplos estão em
 O deploy manual na AWS está em
 [`./docs/deploy-manual-aws-console.md`](./docs/deploy-manual-aws-console.md).
 
-## CI (v1)
+## CI/CD
 
 A pipeline inicial do backend está em
 [`../.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml)
@@ -79,4 +79,8 @@ Checks executados:
 - `go mod tidy` com verificação de diff limpo;
 - `make package` para gerar `function.zip` como artifact.
 
-Nesta versão, o deploy para AWS Lambda permanece manual.
+O deploy automatizado do backend está em
+[`./docs/deploy-github-actions.md`](./docs/deploy-github-actions.md).
+
+O guia manual no Console AWS continua disponível como fallback em
+[`./docs/deploy-manual-aws-console.md`](./docs/deploy-manual-aws-console.md).

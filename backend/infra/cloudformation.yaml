@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Infrastructure for the todos backend using Lambda, API Gateway HTTP API and DynamoDB.
+
+Parameters:
+  TableName:
+    Type: String
+    Default: todos-table
+    Description: DynamoDB table name for todos
+
+  FunctionName:
+    Type: String
+    Default: todos-api
+    Description: Name of the Lambda function
+
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: Exact origin allowed by the backend. Use the frontend origin in production.
+
+  LambdaCodeS3Bucket:
+    Type: String
+    Description: S3 bucket containing the Lambda deployment package zip
+
+  LambdaCodeS3Key:
+    Type: String
+    Description: S3 object key for the Lambda deployment package zip
+
+  LambdaMemory:
+    Type: Number
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+    Description: Lambda memory in MB
+
+  LambdaTimeout:
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 900
+    Description: Lambda timeout in seconds
+
+Resources:
+  TodosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  LambdaTablePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-table-access
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:GetItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FunctionName}
+      RetentionInDays: 14
+
+  TodosLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      Description: Backend for the todos API
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - arm64
+      Code:
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: !Ref LambdaCodeS3Key
+      MemorySize: !Ref LambdaMemory
+      Timeout: !Ref LambdaTimeout
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          ALLOWED_ORIGIN: !Ref AllowedOrigin
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref TodosLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${TodosApi}/*
+
+  TodosApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-http-api
+      ProtocolType: HTTP
+      DisableExecuteApiEndpoint: false
+
+  TodosApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref TodosApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TodosLambda.Arn}/invocations
+      IntegrationMethod: POST
+      PayloadFormatVersion: '2.0'
+
+  TodosApiRouteGet:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TodosApi
+      RouteKey: GET /todos
+      Target: !Sub integrations/${TodosApiIntegration}
+
+  TodosApiRoutePost:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TodosApi
+      RouteKey: POST /todos
+      Target: !Sub integrations/${TodosApiIntegration}
+
+  TodosApiRoutePatch:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TodosApi
+      RouteKey: PATCH /todos/{id}
+      Target: !Sub integrations/${TodosApiIntegration}
+
+  TodosApiRouteDelete:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TodosApi
+      RouteKey: DELETE /todos/{id}
+      Target: !Sub integrations/${TodosApiIntegration}
+
+  TodosApiRouteOptions:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TodosApi
+      RouteKey: OPTIONS /{proxy+}
+      Target: !Sub integrations/${TodosApiIntegration}
+
+  TodosApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref TodosApi
+      StageName: $default
+      AutoDeploy: true
+    DependsOn:
+      - TodosApiRouteGet
+      - TodosApiRoutePost
+      - TodosApiRoutePatch
+      - TodosApiRouteDelete
+      - TodosApiRouteOptions
+
+Outputs:
+  ApiEndpoint:
+    Description: Invoke URL for the HTTP API
+    Value: !Sub https://${TodosApi}.execute-api.${AWS::Region}.amazonaws.com
+
+  LambdaFunctionName:
+    Description: Name of the Lambda function
+    Value: !Ref FunctionName
+
+  DynamoDBTableName:
+    Description: Name of the DynamoDB table
+    Value: !Ref TableName
